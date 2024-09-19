@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class Environment : MonoBehaviour
 {
@@ -17,7 +18,7 @@ public class Environment : MonoBehaviour
     }
 
     private static readonly Grid[,] ActorGrid = new Grid[16, 9];
-    private const int GridSize = 50;
+    public const int GridSize = 50;
     
     public readonly Vector2 EnvironmentSize = new Vector2(GridSize*ActorGrid.GetLength(0), GridSize*ActorGrid.GetLength(1));
 
@@ -34,7 +35,8 @@ public class Environment : MonoBehaviour
         {
             for (int j = 0; j < ActorGrid.GetLength(1); j++)
             {
-                ActorGrid[i, j] = new Grid {gridPosition = new Vector2Int(i, j)};
+                float grayscale = Random.Range(0f, 0.45f);
+                ActorGrid[i, j] = new Grid(new Vector2Int(i, j), new Color(grayscale, grayscale, grayscale));
             }
         }
     }
@@ -56,7 +58,7 @@ public class Environment : MonoBehaviour
         ActorGrid[gridPosition.x, gridPosition.y].Remove(actor);
     }
     
-    public Vector2Int GetGridPosition(Vector2 position)
+    public static Vector2Int GetGridPosition(Vector2 position)
     {
         Vector2Int gridPosition = new Vector2Int
         {
@@ -72,6 +74,12 @@ public class Environment : MonoBehaviour
         return Vector2Int.zero;
     }
 
+    public static Vector3 GetWorldPosition(Vector2Int gridPosition)
+    {
+        Vector2 pos = gridPosition * GridSize;
+        return (Vector3)pos;
+    }
+    
     public List<Grid> GetSurroundingGrids(Vector2Int gridPosition)
     {
         List<Grid> grids = new List<Grid>();
@@ -105,6 +113,20 @@ public class Environment : MonoBehaviour
 
 public class Grid : List<Actor>
 {
-    public Vector2Int gridPosition;    
-}
+    public Vector2Int gridPosition;
+    public Color color;
+    public GameObject gameObject;
 
+    public Grid(Vector2Int _gridPosition, Color _color)
+    {
+        gridPosition = _gridPosition;
+        color = _color;
+        
+        
+        GameObject gridObj = Resources.Load<GameObject>("Grid");
+        gameObject = GameObject.Instantiate(gridObj, Environment.GetWorldPosition(gridPosition) + new Vector3(Environment.GridSize / 2f, Environment.GridSize / 2f, 0f), Quaternion.identity);
+        
+        gridObj.GetComponent<SpriteRenderer>().color = color;
+        gameObject.transform.localScale = new Vector3(Environment.GridSize, Environment.GridSize, 1f);
+    }
+} 

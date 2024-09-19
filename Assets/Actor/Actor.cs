@@ -22,16 +22,16 @@ public class Actor : MonoBehaviour
     
     private Dictionary<string, float> genes = new Dictionary<string, float>()
     {
-        {"Attraction", 10f},
+        {"Attraction", 50f},
         {"Dampening", 0.5f},
-        {"Wander", 2f}
+        {"Wander", .5f}
     };
 
     public bool test;
 
     private void Start()
     {
-        if (test) genes["Attraction"] = -10f;
+        if (test) genes["Attraction"] = -50f;
         
         mass = 10f;
         
@@ -41,7 +41,7 @@ public class Actor : MonoBehaviour
         
         env = Environment.Instance;
         
-        gridPosition = env.GetGridPosition(transform.position);
+        gridPosition = Environment.GetGridPosition(transform.position);
         currentGrid = env.AddToGrid(this, gridPosition);
         surroundingGrids = env.GetSurroundingGrids(gridPosition);
     }
@@ -61,7 +61,7 @@ public class Actor : MonoBehaviour
                 Vector2 direction = distance.normalized;
 
                 // attraction force
-                Vector2 attractionForce = direction * genes["Attraction"] / distance.magnitude;
+                Vector2 attractionForce = direction * genes["Attraction"] / distance.magnitude; // should be sqrMagnitude but whatever
                 Vector2 attractionAcceleration = attractionForce / mass;
                 acceleration += attractionAcceleration;
             }
@@ -90,7 +90,7 @@ public class Actor : MonoBehaviour
 
     private void UpdateGrid()
     {
-        Vector2Int _gridPosition = env.GetGridPosition(transform.position);
+        Vector2Int _gridPosition = Environment.GetGridPosition(transform.position);
         if (_gridPosition != gridPosition)
         {
             env.RemoveFromGrid(this, gridPosition);
