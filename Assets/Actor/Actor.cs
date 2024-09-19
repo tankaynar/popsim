@@ -1,33 +1,117 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Actor : MonoBehaviour
 {
+    [SerializeField]
     private Vector2 speed;
     private Vector2 acceleration;
+    private float mass;
+
+    private Grid currentGrid;
+    private Vector2Int gridPosition;
+    private List<Grid> surroundingGrids;
+
+    private Environment env;
+
+    private SpriteRenderer spriteRenderer;
     
-    private Dictionary<string, float> genes;
+    private Dictionary<string, float> genes = new Dictionary<string, float>()
+    {
+        {"Attraction", 1f},
+        {"Dampening", 0.2f}
+    };
+
+    public bool test;
 
     private void Start()
     {
-        genes = new Dictionary<string, float>()
-        {
-            {"Attraction", 1f}
-        };
+        if (test) genes["Attraction"] = -1f;
+        
+        mass = 10f;
+        
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        
+        env = Environment.Instance;
+        
+        gridPosition = env.GetGridPosition(transform.position);
+        currentGrid = env.AddToGrid(this, gridPosition);
+        surroundingGrids = env.GetSurroundingGrids(gridPosition);
     }
 
     private void CalculateGeneForces()
     {
-        
+        for (var i = 0; i < surroundingGrids.Count; i++)
+        {
+            Grid grid = surroundingGrids[i];
+
+            for (var j = 0; j < grid.Count; j++)
+            {
+                Actor actor = grid[j];
+                if (actor == this) continue;
+
+                Vector2 distance = actor.transform.position - transform.position;
+                Vector2 direction = distance.normalized;
+
+                // attraction force
+                Vector2 attractionForce = direction * genes["Attraction"] / distance.magnitude;
+                Vector2 attractionAcceleration = attractionForce / mass;
+                acceleration.x += attractionAcceleration.x;
+                acceleration.y += attractionAcceleration.y;
+            }
+        }
+    }
+
+    private void UpdateGrid()
+    {
+        Vector2Int _gridPosition = env.GetGridPosition(transform.position);
+        if (_gridPosition != gridPosition)
+        {
+            env.RemoveFromGrid(this, gridPosition);
+            currentGrid = env.AddToGrid(this, _gridPosition);
+            
+            gridPosition = _gridPosition;
+            surroundingGrids = env.GetSurroundingGrids(gridPosition);
+        }
+    }
+
+    private void Render()
+    {
+        transform.localScale = Vector3.one * mass / 5f;
     }
     
     private void Update()
     {
+        // update grid
+        // ReSharper disable once Unity.PerformanceCriticalCodeInvocation
+        UpdateGrid();
+     
+        // update visuals
+        Render();
+        
         acceleration = new Vector2();
         
         // calculate all acting forces
         CalculateGeneForces();
+        
+        // apply dampening
+        speed *= 1f - genes["Dampening"] * Time.deltaTime;
+        
+        // apply acceleration
+        speed += acceleration;
+        
+        // clamp speed
+        if (speed.magnitude > Environment.MaxSpeed) 
+            speed = speed.normalized * Environment.MaxSpeed;
+        
+        // edge detection
+        if (transform.position.x + speed.x*Time.deltaTime <= 0 || transform.position.x + speed.x*Time.deltaTime >= env.EnvironmentSize.x) speed.x = -speed.x;
+        if (transform.position.y + speed.y*Time.deltaTime <= 0 || transform.position.y + speed.y*Time.deltaTime >= env.EnvironmentSize.y) speed.y = -speed.y;
+        
+        // apply speed
+        transform.Translate(speed * Time.deltaTime);
     }
 }
