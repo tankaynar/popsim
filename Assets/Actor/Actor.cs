@@ -9,10 +9,14 @@ public class Actor : MonoBehaviour
 {
     private Vector2 speed;
     private Vector2 acceleration;
+    [SerializeField]
     private float mass;
     private bool desireToEat;
-    [SerializeField]
+    private bool desireToReproduce;
     private float fullness;
+
+    [SerializeField]
+    private float matingCooldown;
 
     private float energyUsage;
     
@@ -24,16 +28,19 @@ public class Actor : MonoBehaviour
 
     private SpriteRenderer spriteRenderer;
     
-    private Dictionary<string, float> genes = new Dictionary<string, float>()
+    public Dictionary<string, float> genes = new Dictionary<string, float>()
     {
         {"Attraction", 50f},
         {"Runaway", 50f},
         {"Dampening", 0.5f},
         {"Wander", .5f},
-        {"HungerThreshold", .5f}
+        {"HungerThreshold", .5f},
+        {"ChildMass", 0.3f},
+        {"ChildDesireThreshold", 20f},
+        {"MatingCooldown", 60f}
     };
 
-    private Dictionary<string, bool> bGenes = new Dictionary<string, bool>()
+    public Dictionary<string, bool> bGenes = new Dictionary<string, bool>()
     {
         {"Herbivore", true}
     };
@@ -44,11 +51,7 @@ public class Actor : MonoBehaviour
     {
         fullness = 1f;
         
-        if (!test) bGenes["Herbivore"] = false;
-        
         spriteRenderer = GetComponent<SpriteRenderer>();
-
-        if (!test) spriteRenderer.color = Color.red;
         
         env = Environment.Instance;
         
@@ -57,6 +60,21 @@ public class Actor : MonoBehaviour
         surroundingGrids = env.GetSurroundingGrids(gridPosition);
     }
 
+    public void InitializeGenes(Dictionary<string, float> _genes, Dictionary<string, bool> _bGenes)
+    {
+        genes = _genes;
+        bGenes = _bGenes;
+  
+        if (!bGenes["Herbivore"]) spriteRenderer.color = Color.red;
+        
+        matingCooldown = genes["MatingCooldown"];
+    }
+
+    public float GetMass()
+    {
+        return mass;
+    }
+    
     private void CalculateGeneForces()
     {
         for (var i = 0; i < surroundingGrids.Count; i++)
@@ -71,7 +89,14 @@ public class Actor : MonoBehaviour
                 Vector2 distance = actor.transform.position - transform.position;
                 Vector2 direction = distance.normalized;
 
-                if (bGenes["Herbivore"] == false && desireToEat && actor.bGenes["Herbivore"] == true)
+                bool herbivoreEatingAttraction =
+                    bGenes["Herbivore"] == false && desireToEat && actor.bGenes["Herbivore"] == true;
+
+                bool matingAttraction =
+                    bGenes["Herbivore"] && actor.bGenes["Herbivore"] && desireToReproduce && actor.desireToReproduce;
+                
+                
+                if (herbivoreEatingAttraction || matingAttraction)
                 {
                     // attraction force
                     Vector2 attractionForce = direction * genes["Attraction"] / distance.magnitude; // should be sqrMagnitude but whatever
@@ -145,6 +170,17 @@ public class Actor : MonoBehaviour
         
         // apply hunger
         Hunger();
+        
+        // children handling
+        Children();
+    }
+
+    private void Children()
+    {
+        if (matingCooldown > 0f) matingCooldown -= Time.deltaTime;
+        if (matingCooldown < 0f) matingCooldown = 0f;
+        
+        desireToReproduce = (mass >= genes["ChildDesireThreshold"]) && matingCooldown == 0f;
     }
 
     private void Hunger()
@@ -219,9 +255,16 @@ public class Actor : MonoBehaviour
             // collider is herbivore
             if (bGenes["Herbivore"] == true)
             {
-                // herb - herb collision
-                // TODO: reproduction
-                return;
+                if (desireToReproduce && otherActor.desireToReproduce)
+                {
+                    // fun times
+                    matingCooldown = genes["MatingCooldown"];
+                    otherActor.matingCooldown = otherActor.genes["MatingCooldown"];
+                    
+                    desireToReproduce = false;
+                    otherActor.desireToReproduce = false;
+                    GameManager.Instance.CreateActorFromParents(new []{ this, otherActor }, transform.position);
+                }
             }
             else
             {
