@@ -17,7 +17,7 @@ public class Environment : MonoBehaviour
     }
 
     private static readonly Grid[,] ActorGrid = new Grid[16, 9];
-    private const int GridSize = 10;
+    private const int GridSize = 50;
     
     public readonly Vector2 EnvironmentSize = new Vector2(GridSize*ActorGrid.GetLength(0), GridSize*ActorGrid.GetLength(1));
 

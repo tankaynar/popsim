@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class Actor : MonoBehaviour
 {
@@ -21,19 +22,22 @@ public class Actor : MonoBehaviour
     
     private Dictionary<string, float> genes = new Dictionary<string, float>()
     {
-        {"Attraction", 1f},
-        {"Dampening", 0.2f}
+        {"Attraction", 10f},
+        {"Dampening", 0.5f},
+        {"Wander", 2f}
     };
 
     public bool test;
 
     private void Start()
     {
-        if (test) genes["Attraction"] = -1f;
+        if (test) genes["Attraction"] = -10f;
         
         mass = 10f;
         
         spriteRenderer = GetComponent<SpriteRenderer>();
+
+        if (!test) spriteRenderer.color = Color.red;
         
         env = Environment.Instance;
         
@@ -59,11 +63,30 @@ public class Actor : MonoBehaviour
                 // attraction force
                 Vector2 attractionForce = direction * genes["Attraction"] / distance.magnitude;
                 Vector2 attractionAcceleration = attractionForce / mass;
-                acceleration.x += attractionAcceleration.x;
-                acceleration.y += attractionAcceleration.y;
+                acceleration += attractionAcceleration;
             }
         }
+        
+        // wander force
+        if (acceleration == Vector2.zero)
+        {
+            if (wanderTarget == Vector2.zero)
+                wanderTarget = new Vector2(Random.Range(0f, env.EnvironmentSize.x), Random.Range(0f, env.EnvironmentSize.y));
+
+            while ((wanderTarget - (Vector2)transform.position).magnitude < 2f)
+            {
+                wanderTarget = new Vector2(Random.Range(0f, env.EnvironmentSize.x), Random.Range(0f, env.EnvironmentSize.y));
+            }
+
+            Vector2 direction = (wanderTarget - (Vector2)transform.position).normalized;
+            Vector2 wanderForce = direction * genes["Wander"];
+            Vector2 wanderAcceleration = wanderForce / mass;
+
+            acceleration += wanderAcceleration;
+        }
     }
+
+    private Vector2 wanderTarget;
 
     private void UpdateGrid()
     {
