@@ -7,11 +7,15 @@ using Random = UnityEngine.Random;
 
 public class Actor : MonoBehaviour
 {
-    [SerializeField]
     private Vector2 speed;
     private Vector2 acceleration;
     private float mass;
+    private bool desireToEat;
+    [SerializeField]
+    private float fullness;
 
+    private float energyUsage;
+    
     private Grid currentGrid;
     private Vector2Int gridPosition;
     private List<Grid> surroundingGrids;
@@ -23,17 +27,24 @@ public class Actor : MonoBehaviour
     private Dictionary<string, float> genes = new Dictionary<string, float>()
     {
         {"Attraction", 50f},
+        {"Runaway", 50f},
         {"Dampening", 0.5f},
         {"Wander", .5f},
-        {"Herbivore", 1f}
+        {"HungerThreshold", .5f}
+    };
+
+    private Dictionary<string, bool> bGenes = new Dictionary<string, bool>()
+    {
+        {"Herbivore", true}
     };
 
     public bool test;
 
     private void Start()
     {
-        if (test) genes["Attraction"] = -50f;
-        if (!test) genes["Herbivore"] = 0f;
+        fullness = 1f;
+        
+        if (!test) bGenes["Herbivore"] = false;
         
         spriteRenderer = GetComponent<SpriteRenderer>();
 
@@ -60,10 +71,22 @@ public class Actor : MonoBehaviour
                 Vector2 distance = actor.transform.position - transform.position;
                 Vector2 direction = distance.normalized;
 
-                // attraction force
-                Vector2 attractionForce = direction * genes["Attraction"] / distance.magnitude; // should be sqrMagnitude but whatever
-                Vector2 attractionAcceleration = attractionForce / mass;
-                acceleration += attractionAcceleration;
+                if (bGenes["Herbivore"] == false && desireToEat && actor.bGenes["Herbivore"] == true)
+                {
+                    // attraction force
+                    Vector2 attractionForce = direction * genes["Attraction"] / distance.magnitude; // should be sqrMagnitude but whatever
+                    Vector2 attractionAcceleration = attractionForce / mass;
+                    acceleration += attractionAcceleration;
+                }
+                
+                if (bGenes["Herbivore"] == true && actor.bGenes["Herbivore"] == false)
+                {
+                    // runaway force
+                    Vector2 runawayForce = -direction * genes["Runaway"] / distance.magnitude; // should be sqrMagnitude but whatever
+                    Vector2 runawayAcceleration = runawayForce / mass;
+                    acceleration += runawayAcceleration;
+                }
+                
             }
         }
         
@@ -115,6 +138,33 @@ public class Actor : MonoBehaviour
         // update visuals
         Render();
         
+        // apply movement
+        Movement();
+
+        energyUsage = acceleration.magnitude;
+        
+        // apply hunger
+        Hunger();
+    }
+
+    private void Hunger()
+    {
+        if (fullness > 0.2) fullness -= Time.deltaTime * energyUsage;
+        if (fullness > 0 && fullness <= 0.2)
+        {
+            float fatBurn = Time.deltaTime * energyUsage;
+            AdjustMass(-fatBurn);
+            fullness += fatBurn;
+        }
+        
+        if (fullness <= 0) Die();
+
+        if (fullness <= genes["HungerThreshold"]) desireToEat = true;
+        else desireToEat = false;
+    }
+    
+    private void Movement()
+    {
         acceleration = new Vector2();
         
         // calculate all acting forces
@@ -137,17 +187,17 @@ public class Actor : MonoBehaviour
         // apply speed
         transform.Translate(speed * Time.deltaTime);
     }
-
+    
     private void OnCollisionEnter2D(Collision2D other)
     {
         // collision handling
         Actor otherActor = other.gameObject.GetComponent<Actor>();
 
-        if (otherActor.genes["Herbivore"] == 0f)
+        if (otherActor.bGenes["Herbivore"] == false)
         {
             // collider is carnivore
             
-            if (genes["Herbivore"] == 1f)
+            if (bGenes["Herbivore"] == true)
             {
                 // eaten
                 otherActor.Eat(this);
@@ -167,8 +217,10 @@ public class Actor : MonoBehaviour
         else
         {
             // collider is herbivore
-            if (genes["Herbivore"] == 1f)
+            if (bGenes["Herbivore"] == true)
             {
+                // herb - herb collision
+                // TODO: reproduction
                 return;
             }
             else
@@ -187,7 +239,20 @@ public class Actor : MonoBehaviour
 
     public void Eat(Actor otherActor)
     {
-        AdjustMass(otherActor.mass * 0.5f);
+        if (!desireToEat) return;
+
+        float energyGained = otherActor.mass * 0.5f;
+        fullness += energyGained;
+
+        float extraEnergy = fullness - 1f;
+        if (extraEnergy > 0)
+        {
+            fullness -= extraEnergy;
+            AdjustMass(extraEnergy * 0.4f); 
+            // dont add all extra energy to mass
+            // this way it is more energy efficient to eat only when hungry
+        }
+        
         otherActor.Die();
     }
     
