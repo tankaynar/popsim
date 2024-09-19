@@ -24,7 +24,8 @@ public class Actor : MonoBehaviour
     {
         {"Attraction", 50f},
         {"Dampening", 0.5f},
-        {"Wander", .5f}
+        {"Wander", .5f},
+        {"Herbivore", 1f}
     };
 
     public bool test;
@@ -32,8 +33,7 @@ public class Actor : MonoBehaviour
     private void Start()
     {
         if (test) genes["Attraction"] = -50f;
-        
-        mass = 10f;
+        if (!test) genes["Herbivore"] = 0f;
         
         spriteRenderer = GetComponent<SpriteRenderer>();
 
@@ -136,5 +136,64 @@ public class Actor : MonoBehaviour
         
         // apply speed
         transform.Translate(speed * Time.deltaTime);
+    }
+
+    private void OnCollisionEnter2D(Collision2D other)
+    {
+        // collision handling
+        Actor otherActor = other.gameObject.GetComponent<Actor>();
+
+        if (otherActor.genes["Herbivore"] == 0f)
+        {
+            // collider is carnivore
+            
+            if (genes["Herbivore"] == 1f)
+            {
+                // eaten
+                otherActor.Eat(this);
+            }
+            else
+            {
+                // bigger mass eats
+                if (mass > otherActor.mass)
+                {
+                    Eat(otherActor);
+                } else if (mass < otherActor.mass)
+                {
+                    otherActor.Eat(this);
+                }
+            }
+        }
+        else
+        {
+            // collider is herbivore
+            if (genes["Herbivore"] == 1f)
+            {
+                return;
+            }
+            else
+            {
+                // eats
+                Eat(otherActor);
+            }
+        }
+    }
+
+    public void AdjustMass(float adjustment)
+    {
+        mass += adjustment;
+    }
+
+
+    public void Eat(Actor otherActor)
+    {
+        AdjustMass(otherActor.mass * 0.5f);
+        otherActor.Die();
+    }
+    
+    public void Die()
+    {
+        env.RemoveFromGrid(this, gridPosition);
+        Destroy(gameObject);
     }
 }

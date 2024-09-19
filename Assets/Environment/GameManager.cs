@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour
             {
                 obj.GetComponent<Actor>().test = true;
             }
+            obj.GetComponent<Actor>().AdjustMass(Random.Range(5f, 25f));
         }
     }
 }
