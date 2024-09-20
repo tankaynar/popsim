@@ -23,10 +23,10 @@ public class GameManager : MonoBehaviour
 
         for (int i = 0; i < 50; i++)
         {
-            GameObject obj = Instantiate(actorObj, new Vector3(Random.Range(0f, size.x), Random.Range(0f, size.y), 0f), Quaternion.identity, Environment.Instance.transform);
+            GameObject obj = Instantiate(actorObj, new Vector3(Random.Range(0f, size.x), Random.Range(0f, size.y), 0f), Quaternion.identity, Environment.Instance.ActorsParent);
             if (Random.value >= 0.5f)
             {
-                obj.GetComponent<Actor>().test = true;
+                
             }
             obj.GetComponent<Actor>().AdjustMass(Random.Range(20f, 50f));
         }
@@ -34,7 +34,7 @@ public class GameManager : MonoBehaviour
 
     public void CreateActor(Vector2 position, float mass, Dictionary<string, float> genes, Dictionary<string, bool> bGenes)
     {
-        GameObject obj = Instantiate(actorObj, position, Quaternion.identity, Environment.Instance.transform);
+        GameObject obj = Instantiate(actorObj, position, Quaternion.identity, Environment.Instance.ActorsParent);
         Actor actor = obj.GetComponent<Actor>();
         actor.InitializeGenes(genes, bGenes);
         actor.AdjustMass(mass);

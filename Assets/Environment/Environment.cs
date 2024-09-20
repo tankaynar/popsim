@@ -17,6 +17,22 @@ public class Environment : MonoBehaviour
         Instance = this;
     }
 
+    [SerializeField] private Transform actorsParent;
+    public Transform ActorsParent
+    {
+        get { return actorsParent; }
+    }
+    
+    [SerializeField] private Transform gridsParent;
+    public Transform GridsParent
+    {
+        get { return gridsParent; }
+    }
+    
+    [SerializeField] private Transform foodsParent;
+    public Transform FoodsParent 
+    { get { return foodsParent; } }
+    
     private static readonly Grid[,] ActorGrid = new Grid[16, 9];
     public const int GridSize = 50;
     
@@ -124,7 +140,11 @@ public class Grid : List<Actor>
         
         
         GameObject gridObj = Resources.Load<GameObject>("Grid");
-        gameObject = GameObject.Instantiate(gridObj, Environment.GetWorldPosition(gridPosition) + new Vector3(Environment.GridSize / 2f, Environment.GridSize / 2f, 0f), Quaternion.identity);
+        gameObject = GameObject.Instantiate(gridObj,
+            Environment.GetWorldPosition(gridPosition) + new Vector3(Environment.GridSize / 2f, Environment.GridSize / 2f, 0f), 
+            Quaternion.identity,
+            Environment.Instance.GridsParent
+            );
         
         gridObj.GetComponent<SpriteRenderer>().color = color;
         gameObject.transform.localScale = new Vector3(Environment.GridSize, Environment.GridSize, 1f);

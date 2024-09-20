@@ -45,7 +45,9 @@ public class Actor : MonoBehaviour
         {"Herbivore", true}
     };
 
-    public bool test;
+    [SerializeField] private EdgeCollider2D leftCollider;
+    [SerializeField] private EdgeCollider2D centerCollider;
+    [SerializeField] private EdgeCollider2D rightCollider;
 
     private void Start()
     {
@@ -115,6 +117,22 @@ public class Actor : MonoBehaviour
             }
         }
         
+        // food attraction
+        if (foodDetection != Vector3Int.zero)
+        {
+            Vector3 leftVector = Quaternion.Euler(0, 0, 45) * transform.right;
+            Vector3 rightVector = Quaternion.Euler(0, 0, -45) * transform.right;
+            Vector3 centerVector = transform.right;
+            
+            Vector3 direction = leftVector*foodDetection.x + centerVector*foodDetection.y + rightVector*foodDetection.z;
+            Vector2 foodForce = direction * 10f;
+            Vector2 foodAcceleration = foodForce / mass;
+
+            acceleration += foodAcceleration;
+        }
+        
+                    
+        
         // wander force
         if (acceleration == Vector2.zero)
         {
@@ -166,6 +184,9 @@ public class Actor : MonoBehaviour
         // apply movement
         Movement();
 
+        // apply rotation
+        HandleRotation();
+        
         energyUsage = acceleration.magnitude;
         
         // apply hunger
@@ -173,6 +194,12 @@ public class Actor : MonoBehaviour
         
         // children handling
         Children();
+    }
+
+    private void HandleRotation()
+    {
+        Vector2 rotationVector = speed.normalized;
+        transform.rotation = Quaternion.Euler(0, 0, Vector2.SignedAngle(Vector2.right, rotationVector));
     }
 
     private void Children()
@@ -221,7 +248,7 @@ public class Actor : MonoBehaviour
         if (transform.position.y + speed.y*Time.deltaTime <= 0 || transform.position.y + speed.y*Time.deltaTime >= env.EnvironmentSize.y) speed.y = -speed.y;
         
         // apply speed
-        transform.Translate(speed * Time.deltaTime);
+        transform.position = transform.position + (Vector3)(speed * Time.deltaTime);
     }
     
     private void OnCollisionEnter2D(Collision2D other)
@@ -303,5 +330,30 @@ public class Actor : MonoBehaviour
     {
         env.RemoveFromGrid(this, gridPosition);
         Destroy(gameObject);
+    }
+
+    private Vector3Int foodDetection;
+    
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        Vector3Int touching = new Vector3Int();
+        if (leftCollider.IsTouching(other))
+        {
+            touching.x = 1;
+        }
+        if (centerCollider.IsTouching(other))
+        {
+            touching.y = 1;
+        }
+        if (rightCollider.IsTouching(other))
+        {
+            touching.z = 1;
+        }
+
+        if (other.gameObject.CompareTag("Food"))
+        {
+            // food detected!
+            foodDetection = touching;
+        }
     }
 }
