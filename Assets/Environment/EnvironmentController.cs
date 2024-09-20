@@ -23,7 +23,7 @@ public class EnvironmentController : MonoBehaviour
 
         if (foodGenerationTimer <= 0)
         {
-            foodGenerationTimer = .2f;
+            foodGenerationTimer = .1f;
             if (Random.value <= foodGenerationRate) GenerateRandomFood();
         }
     }
