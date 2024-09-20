@@ -84,7 +84,7 @@ public class Actor : MonoBehaviour
                     bGenes["Herbivore"] == false && desireToEat && actor.bGenes["Herbivore"] == true;
 
                 bool matingAttraction =
-                    bGenes["Herbivore"] && actor.bGenes["Herbivore"] && desireToReproduce && actor.desireToReproduce;
+                    bGenes["Herbivore"] == actor.bGenes["Herbivore"] && desireToReproduce && actor.desireToReproduce;
                 
                 
                 if (herbivoreEatingAttraction || matingAttraction)
@@ -258,14 +258,7 @@ public class Actor : MonoBehaviour
                     }
                     else
                     {
-                        // bigger mass eats
-                        if (mass > otherActor.mass)
-                        {
-                            Eat(otherActor);
-                        } else if (mass < otherActor.mass)
-                        {
-                            otherActor.Eat(this);
-                        }
+                        TryMating(otherActor);
                     }
                 }
                 else
@@ -273,16 +266,7 @@ public class Actor : MonoBehaviour
                     // collider is herbivore
                     if (bGenes["Herbivore"] == true)
                     {
-                        if (desireToReproduce && otherActor.desireToReproduce)
-                        {
-                            // fun times
-                            matingCooldown = genes["MatingCooldown"]*60f;
-                            otherActor.matingCooldown = otherActor.genes["MatingCooldown"]*60f;
-                    
-                            desireToReproduce = false;
-                            otherActor.desireToReproduce = false;
-                            GameManager.Instance.CreateActorFromParents(new []{ this, otherActor }, transform.position);
-                        }
+                        TryMating(otherActor);
                     }
                     else
                     {
@@ -310,6 +294,20 @@ public class Actor : MonoBehaviour
             default:
                 Debug.Log("Unknown collision: " + other.gameObject.name);
                 break;
+        }
+    }
+
+    private void TryMating(Actor otherActor)
+    {
+        if (desireToReproduce && otherActor.desireToReproduce)
+        {
+            // fun times
+            matingCooldown = genes["MatingCooldown"]*60f;
+            otherActor.matingCooldown = otherActor.genes["MatingCooldown"]*60f;
+                    
+            desireToReproduce = false;
+            otherActor.desireToReproduce = false;
+            GameManager.Instance.CreateActorFromParents(new []{ this, otherActor }, transform.position);
         }
     }
 
