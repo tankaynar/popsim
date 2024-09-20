@@ -12,9 +12,11 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float wasdSpeed;
     [SerializeField] private float dampen;
     [SerializeField] private float mouseSpeed;
+    [SerializeField] private float scrollSpeed;
     
     private void LateUpdate()
     {
+        // ---------- movement ----------
         accelaration = Vector2.zero;
         accelaration.x = Input.GetAxis("Horizontal")*wasdSpeed;
         accelaration.y = Input.GetAxis("Vertical")*wasdSpeed;
@@ -29,5 +31,9 @@ public class CameraController : MonoBehaviour
         speed += accelaration;
 
         transform.position += (Vector3)speed*Time.deltaTime;
+        // ---------- ----------
+        
+        // scrolling
+        Camera.main.orthographicSize += Input.GetAxis("Mouse ScrollWheel")*scrollSpeed*Camera.main.orthographicSize;
     }
 }
