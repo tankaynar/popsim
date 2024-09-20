@@ -40,13 +40,13 @@ public class GameManager : MonoBehaviour
         string namesFull = Resources.Load<TextAsset>("names").text;
         names = namesFull.Split("\n");
 
-        for (int i = 0; i < 50; i++)
+        for (int i = 0; i < 250; i++)
         {
-            CreateRandomActor();
+            CreateRandomActor(1);
         }
     }
 
-    public void CreateActor(Vector2 position, float mass, Dictionary<string, float> genes, Dictionary<string, bool> bGenes, string actorName)
+    public void CreateActor(Vector2 position, float mass, Dictionary<string, float> genes, Dictionary<string, bool> bGenes, string actorName, int generation)
     {
         GameObject obj = Instantiate(actorObj, position, Quaternion.identity, Environment.Instance.ActorsParent);
         obj.transform.GetChild(0).name = actorName;
@@ -54,6 +54,7 @@ public class GameManager : MonoBehaviour
         Actor actor = obj.GetComponentInChildren<Actor>();
         actor.InitializeGenes(genes, bGenes);
         actor.AdjustMass(mass);
+        actor.generation = generation;
     }
 
     public void CreateActorFromParents(Actor[] parents, Vector2 position)
@@ -86,11 +87,13 @@ public class GameManager : MonoBehaviour
 
         string actorName = parents[0].gameObject.name.Substring(0, parents[0].gameObject.name.Length / 2) +
                            parents[1].gameObject.name.Substring(parents[1].gameObject.name.Length / 2);
+
+        int generation = Mathf.Max(parents[0].generation, parents[1].generation);
         
-        CreateActor(position, childMass, childGenes, childBGenes, actorName);
+        CreateActor(position, childMass, childGenes, childBGenes, actorName, generation+1);
     }
 
-    private void CreateRandomActor()
+    private void CreateRandomActor(int generation)
     {
         var size = Environment.Instance.EnvironmentSize;
         var pos = new Vector3(Random.Range(0f, size.x), Random.Range(0f, size.y), 0f);
@@ -111,6 +114,6 @@ public class GameManager : MonoBehaviour
         
         string actorName = names[Random.Range(0, names.Length)];
         
-        CreateActor(pos, mass, randGenes, randBGenes, actorName);
+        CreateActor(pos, mass, randGenes, randBGenes, actorName, generation);
     }
 }

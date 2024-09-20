@@ -33,8 +33,8 @@ public class Environment : MonoBehaviour
     public Transform FoodsParent 
     { get { return foodsParent; } }
     
-    private static readonly Grid[,] ActorGrid = new Grid[16, 9];
-    public const int GridSize = 50;
+    private static readonly Grid[,] ActorGrid = new Grid[16*2, 9*2];
+    public const int GridSize = 25;
     
     public readonly Vector2 EnvironmentSize = new Vector2(GridSize*ActorGrid.GetLength(0), GridSize*ActorGrid.GetLength(1));
 

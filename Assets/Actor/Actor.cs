@@ -9,13 +9,13 @@ public class Actor : MonoBehaviour
 {
     private Vector2 speed;
     private Vector2 acceleration;
-    [SerializeField]
     private float mass;
     private bool desireToEat;
     private bool desireToReproduce;
     private float fullness;
 
-    [SerializeField]
+    public int generation;
+    
     private float matingCooldown;
 
     private float energyUsage;
@@ -37,6 +37,8 @@ public class Actor : MonoBehaviour
     [SerializeField] private EdgeCollider2D rightCollider;
 
     [SerializeField] private ActorUI actorUI;
+
+    private float eatCooldown;
     
     private void Start()
     {
@@ -179,8 +181,9 @@ public class Actor : MonoBehaviour
 
         // apply rotation
         HandleRotation();
-        
+            
         energyUsage = acceleration.magnitude;
+        energyUsage += 0.1f;
         
         // apply hunger
         Hunger();
@@ -227,8 +230,12 @@ public class Actor : MonoBehaviour
         
         if (fullness <= 0) Die();
 
-        if (fullness <= genes["HungerThreshold"]) desireToEat = true;
+        if (fullness <= genes["HungerThreshold"] && eatCooldown <= 0) desireToEat = true;
         else desireToEat = false;
+
+        if (eatCooldown > 0) eatCooldown -= Time.deltaTime;
+        if (eatCooldown <= 0) eatCooldown = 0;
+        if (eatCooldown > 0) desireToEat = false;
     }
     
     private void Movement()
@@ -350,6 +357,7 @@ public class Actor : MonoBehaviour
         }
         
         otherActor.Die();
+        eatCooldown = 30f;
     }
     
     public void Die()

@@ -28,11 +28,18 @@ public class ActorUI : MonoBehaviour
                         "fullness: " + fullness + "\n" +
                         "energy usage: " + energyUsage + "\n" +
                         "mass: " + mass + "\n" +
+                        "generation: " + actor.generation + "\n" +
                         actor.gameObject.name;
+
     }
 
-    public void Press()
+    private void OnMouseEnter()
     {
-        mainText.gameObject.SetActive(!mainText.gameObject.activeSelf);
+        mainText.gameObject.SetActive(true);
+    }
+
+    private void OnMouseExit()
+    {
+        mainText.gameObject.SetActive(false);
     }
 }
