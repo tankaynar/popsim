@@ -27,23 +27,10 @@ public class Actor : MonoBehaviour
     private Environment env;
 
     private SpriteRenderer spriteRenderer;
-    
-    public Dictionary<string, float> genes = new Dictionary<string, float>()
-    {
-        {"Attraction", 50f},
-        {"Runaway", 50f},
-        {"Dampening", 0.5f},
-        {"Wander", .5f},
-        {"HungerThreshold", .5f},
-        {"ChildMass", 0.3f},
-        {"ChildDesireThreshold", 20f},
-        {"MatingCooldown", 60f}
-    };
 
-    public Dictionary<string, bool> bGenes = new Dictionary<string, bool>()
-    {
-        {"Herbivore", true}
-    };
+    public Dictionary<string, float> genes;
+
+    public Dictionary<string, bool> bGenes;
 
     [SerializeField] private EdgeCollider2D leftCollider;
     [SerializeField] private EdgeCollider2D centerCollider;
@@ -53,7 +40,7 @@ public class Actor : MonoBehaviour
     {
         fullness = 1f;
         
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
         
         env = Environment.Instance;
         
@@ -66,10 +53,12 @@ public class Actor : MonoBehaviour
     {
         genes = _genes;
         bGenes = _bGenes;
-  
+        
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        
         if (!bGenes["Herbivore"]) spriteRenderer.color = Color.red;
         
-        matingCooldown = genes["MatingCooldown"];
+        matingCooldown = genes["MatingCooldown"]*60f;
     }
 
     public float GetMass()
@@ -101,7 +90,7 @@ public class Actor : MonoBehaviour
                 if (herbivoreEatingAttraction || matingAttraction)
                 {
                     // attraction force
-                    Vector2 attractionForce = direction * genes["Attraction"] / distance.magnitude; // should be sqrMagnitude but whatever
+                    Vector2 attractionForce = direction * (genes["Attraction"] * 20f) / distance.magnitude; // should be sqrMagnitude but whatever
                     Vector2 attractionAcceleration = attractionForce / mass;
                     acceleration += attractionAcceleration;
                 }
@@ -109,7 +98,7 @@ public class Actor : MonoBehaviour
                 if (bGenes["Herbivore"] == true && actor.bGenes["Herbivore"] == false)
                 {
                     // runaway force
-                    Vector2 runawayForce = -direction * genes["Runaway"] / distance.magnitude; // should be sqrMagnitude but whatever
+                    Vector2 runawayForce = -direction * (genes["Runaway"] * 20f) / distance.magnitude; // should be sqrMagnitude but whatever
                     Vector2 runawayAcceleration = runawayForce / mass;
                     acceleration += runawayAcceleration;
                 }
@@ -125,7 +114,7 @@ public class Actor : MonoBehaviour
             Vector3 centerVector = transform.right;
             
             Vector3 direction = leftVector*foodDetection.x + centerVector*foodDetection.y + rightVector*foodDetection.z;
-            Vector2 foodForce = direction * 10f;
+            Vector2 foodForce = direction * 20f;
             Vector2 foodAcceleration = foodForce / mass;
 
             acceleration += foodAcceleration;
@@ -145,7 +134,7 @@ public class Actor : MonoBehaviour
             }
 
             Vector2 direction = (wanderTarget - (Vector2)transform.position).normalized;
-            Vector2 wanderForce = direction * genes["Wander"];
+            Vector2 wanderForce = direction * (genes["Wander"] * 20f);
             Vector2 wanderAcceleration = wanderForce / mass;
 
             acceleration += wanderAcceleration;
@@ -207,7 +196,7 @@ public class Actor : MonoBehaviour
         if (matingCooldown > 0f) matingCooldown -= Time.deltaTime;
         if (matingCooldown < 0f) matingCooldown = 0f;
         
-        desireToReproduce = (mass >= genes["ChildDesireThreshold"]) && matingCooldown == 0f;
+        desireToReproduce = (mass >= genes["ChildDesireThreshold"]*20f) && matingCooldown == 0f;
     }
 
     private void Hunger()
@@ -253,51 +242,74 @@ public class Actor : MonoBehaviour
     
     private void OnCollisionEnter2D(Collision2D other)
     {
-        // collision handling
-        Actor otherActor = other.gameObject.GetComponent<Actor>();
+        switch (other.gameObject.tag)
+        {
+            case "Actor":
+                Actor otherActor = other.gameObject.GetComponent<Actor>();
 
-        if (otherActor.bGenes["Herbivore"] == false)
-        {
-            // collider is carnivore
+                if (otherActor.bGenes["Herbivore"] == false)
+                {
+                    // collider is carnivore
             
-            if (bGenes["Herbivore"] == true)
-            {
-                // eaten
-                otherActor.Eat(this);
-            }
-            else
-            {
-                // bigger mass eats
-                if (mass > otherActor.mass)
-                {
-                    Eat(otherActor);
-                } else if (mass < otherActor.mass)
-                {
-                    otherActor.Eat(this);
+                    if (bGenes["Herbivore"] == true)
+                    {
+                        // eaten
+                        otherActor.Eat(this);
+                    }
+                    else
+                    {
+                        // bigger mass eats
+                        if (mass > otherActor.mass)
+                        {
+                            Eat(otherActor);
+                        } else if (mass < otherActor.mass)
+                        {
+                            otherActor.Eat(this);
+                        }
+                    }
                 }
-            }
-        }
-        else
-        {
-            // collider is herbivore
-            if (bGenes["Herbivore"] == true)
-            {
-                if (desireToReproduce && otherActor.desireToReproduce)
+                else
                 {
-                    // fun times
-                    matingCooldown = genes["MatingCooldown"];
-                    otherActor.matingCooldown = otherActor.genes["MatingCooldown"];
+                    // collider is herbivore
+                    if (bGenes["Herbivore"] == true)
+                    {
+                        if (desireToReproduce && otherActor.desireToReproduce)
+                        {
+                            // fun times
+                            matingCooldown = genes["MatingCooldown"]*60f;
+                            otherActor.matingCooldown = otherActor.genes["MatingCooldown"]*60f;
                     
-                    desireToReproduce = false;
-                    otherActor.desireToReproduce = false;
-                    GameManager.Instance.CreateActorFromParents(new []{ this, otherActor }, transform.position);
+                            desireToReproduce = false;
+                            otherActor.desireToReproduce = false;
+                            GameManager.Instance.CreateActorFromParents(new []{ this, otherActor }, transform.position);
+                        }
+                    }
+                    else
+                    {
+                        // eats
+                        Eat(otherActor);
+                    }
                 }
-            }
-            else
-            {
-                // eats
-                Eat(otherActor);
-            }
+
+                break;
+            case "Food":
+                if (!bGenes["Herbivore"]) break;
+                
+                var food = other.gameObject.GetComponent<Food>();
+                fullness += food.foodValue;
+                food.Eaten();
+
+                float extraEnergy = fullness - 1f;
+                if (extraEnergy > 0f)
+                {
+                    fullness = 1f;
+                    mass += extraEnergy * 0.95f; // herbivore is more efficient than carnivore
+                }
+                
+                break;
+            default:
+                Debug.Log("Unknown collision: " + other.gameObject.name);
+                break;
         }
     }
 
@@ -354,6 +366,10 @@ public class Actor : MonoBehaviour
         {
             // food detected!
             foodDetection = touching;
+        }
+        else
+        {
+            foodDetection = Vector3Int.zero;
         }
     }
 }

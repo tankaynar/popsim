@@ -12,4 +12,9 @@ public class Food : MonoBehaviour
         foodValue = value;
         transform.localScale = new Vector3(foodValue, foodValue, 1f);
     }
+
+    public void Eaten()
+    {
+        Destroy(gameObject);
+    }
 }
