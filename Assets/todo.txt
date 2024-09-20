@@ -1,2 +1,4 @@
-add ui
 add seasons
+add burning mass marker
+add general info ui
+add hover ui

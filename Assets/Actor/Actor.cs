@@ -36,6 +36,8 @@ public class Actor : MonoBehaviour
     [SerializeField] private EdgeCollider2D centerCollider;
     [SerializeField] private EdgeCollider2D rightCollider;
 
+    [SerializeField] private ActorUI actorUI;
+    
     private void Start()
     {
         fullness = 1f;
@@ -47,6 +49,8 @@ public class Actor : MonoBehaviour
         gridPosition = Environment.GetGridPosition(transform.position);
         currentGrid = env.AddToGrid(this, gridPosition);
         surroundingGrids = env.GetSurroundingGrids(gridPosition);
+        
+        actorUI.Initialize(this);
     }
 
     public void InitializeGenes(Dictionary<string, float> _genes, Dictionary<string, bool> _bGenes)
@@ -183,6 +187,18 @@ public class Actor : MonoBehaviour
         
         // children handling
         Children();
+        
+        // ui stuff
+        HandleUI();
+    }
+
+    private void HandleUI()
+    {
+        actorUI.mass = mass;
+        actorUI.fullness = fullness;
+        actorUI.energyUsage = energyUsage;
+        actorUI.mateDesire = desireToReproduce;
+        actorUI.desireToEat = desireToEat;
     }
 
     private void HandleRotation()
@@ -237,7 +253,7 @@ public class Actor : MonoBehaviour
         if (transform.position.y + speed.y*Time.deltaTime <= 0 || transform.position.y + speed.y*Time.deltaTime >= env.EnvironmentSize.y) speed.y = -speed.y;
         
         // apply speed
-        transform.position = transform.position + (Vector3)(speed * Time.deltaTime);
+        transform.parent.position = transform.position + (Vector3)(speed * Time.deltaTime);
     }
     
     private void OnCollisionEnter2D(Collision2D other)
@@ -339,7 +355,7 @@ public class Actor : MonoBehaviour
     public void Die()
     {
         env.RemoveFromGrid(this, gridPosition);
-        Destroy(gameObject);
+        Destroy(transform.parent.gameObject);
     }
 
     private Vector3Int foodDetection;

@@ -49,9 +49,9 @@ public class GameManager : MonoBehaviour
     public void CreateActor(Vector2 position, float mass, Dictionary<string, float> genes, Dictionary<string, bool> bGenes, string actorName)
     {
         GameObject obj = Instantiate(actorObj, position, Quaternion.identity, Environment.Instance.ActorsParent);
-        obj.name = actorName;
+        obj.transform.GetChild(0).name = actorName;
         
-        Actor actor = obj.GetComponent<Actor>();
+        Actor actor = obj.GetComponentInChildren<Actor>();
         actor.InitializeGenes(genes, bGenes);
         actor.AdjustMass(mass);
     }
